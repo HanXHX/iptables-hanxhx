@@ -1,0 +1,3 @@
+IPTABLES=/sbin/iptables
+IP6TABLES=/sbin/ip6tables
+VERSION=1.0

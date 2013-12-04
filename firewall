@@ -10,31 +10,32 @@
 ### END INIT INFO
 
 # Author: Emilien Mantel <emilien.mantel@debianiste.org>
-# Author: Bernhard Mäser <bernhard.maeser@scale-it.at>
-
 #################################################################
 
-#################################################################
-## BEWARE:
-## WE ALLOW ALL --OUTPUT-- IPv4 TRAFFIC BY DEFAULT
-#################################################################
+FIREWALL_CONF=/etc/firewall/firewall.conf
+FIREWALL_INCLUDES=/etc/firewall/includes
 
-IPTABLES=/sbin/iptables
-IP6TABLES=/sbin/ip6tables
+
+#################################################################
+# Configuration
+#################################################################
+if [ -f $FIREWALL_CONF ] ; then
+	source $FIREWALL_CONF
+else 
+	echo "No configuration-file found ($FIREWALL_CONF)"
+	exit 1
+fi
+
+if [ -f $FIREWALL_INCLUDES ] ; then
+	source $FIREWALL_INCLUDES
+else
+	echo "Minimal include missing ($FIREWALL_INCLUDES)"
+	exit 1
+fi
+
 
 case "$1" in
 	start)
-
-		#################################################################
-		# source configuration
-		#################################################################
-		if [ -f /etc/firewall/firewall.conf ] ; then
-			source /etc/firewall/firewall.conf
-		else 
-			echo "no configuration-file found in /etc/firewall/firewall.conf"
-			echo "aborting, firewall NOT startet"
-			exit 1
-		fi
 
 		echo "starting firewall..."
 
