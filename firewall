@@ -51,20 +51,6 @@ case "$1" in
 		$IPTABLES -P OUTPUT ACCEPT
 
 		#################################################################
-		# CUSTOM CHAINS
-		#################################################################
-
-		## portscan drop
-		$IPTABLES -N portscan_drop
-		$IPTABLES -A portscan_drop -m limit --limit 60/m -j LOG --log-prefix "PORTSCAN DETECTED"
-		$IPTABLES -A portscan_drop -j DROP
-
-		## invalid drop
-		$IPTABLES -N invalid_drop
-		$IPTABLES -A invalid_drop -m state --state INVALID -m limit --limit 60/m -j LOG --log-prefix "INVALID PACKAGE"
-		$IPTABLES -A invalid_drop -m state --state INVALID -j DROP
-
-		#################################################################
 		# IPv4 FORWARDING 
 		#################################################################
 
@@ -136,10 +122,14 @@ case "$1" in
 		done;
 
 		#################################################################
-		# drop and log invalid packages
+		# Drop and log invalid packages
 		#################################################################
 
 		if $drop_invalid ; then
+			$IPTABLES -N invalid_drop
+			$IPTABLES -A invalid_drop -m state --state INVALID -m limit --limit 60/m -j LOG --log-prefix "INVALID PACKAGE"
+			$IPTABLES -A invalid_drop -m state --state INVALID -j DROP
+
 			$IPTABLES -A INPUT -m state --state INVALID -j invalid_drop
 			$IPTABLES -A OUTPUT -m state --state INVALID -j invalid_drop
 		fi
@@ -158,6 +148,11 @@ case "$1" in
 		##################################################################
 
 		if $drop_portscan ; then
+
+			$IPTABLES -N portscan_drop
+			$IPTABLES -A portscan_drop -m limit --limit 60/m -j LOG --log-prefix "PORTSCAN DETECTED"
+			$IPTABLES -A portscan_drop -j DROP
+
 			## nmap Null scans / no flags
 			$IPTABLES -A INPUT -p tcp --tcp-flags ALL NONE -j portscan_drop
 			## nmap FIN stealth scan

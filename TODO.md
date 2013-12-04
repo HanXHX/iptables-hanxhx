@@ -8,7 +8,6 @@ Global
 * Save sysctl currents option before /etc/init.d/firewall and restore them at /etc/init.d/firewall
 * Don't allow "start firewall" if it's started
 * Output Rules (don't allow all output)
-* Don't create "portscan_drop" and "invalid_drop" chains if not needed
 * Debian packaging
 * Create manpage/doc
 * Provide skeleton for custom scripts
