@@ -1,46 +1,50 @@
-# iptables-boilerplate
-rock solid default firewall-rules for webhosts
+# iptables-hanxhx
+Easy and powerful iptables script
 
 ## What is this?
-iptables-boilerplate is a set of predefined firewall rules that are typically used on "webhosts".
-its not a set of rules, designed to secure your home or office-network or to setup a router or gatweay.
-think of "lamp"-servers.
+iptables-hanxhx is a set of predefined firewall rules. Now, you can use this script for "webhosts". I will work to have "generic" config for routers, laptop... etc.
 
-#### iptables-boilerplate is tested on
-* Debian 6.0 / Squeeze (oldstable)
-* Debian 7.0 / Wheezy (stable)
-* Debian 8.0 / Jessie (testing)
+#### iptables-hanxhx is tested on
+* Debian 7.0 / Wheezy
+* Ubuntu 12.10 / Quantal
+
+#### iptables-hanxhx should work with
+* Debian 6.0 / Squeeze
+* Debian 8.0 / Jessie
 * Ubuntu 10.04 LTS / Lucid
 * Ubuntu 12.04 LTS / Precise
-* Ubuntu 12.10 / Quantal
 * Ubuntu 13.04 / Raring
 
-we will support every LTS (Ubuntu) and stable (Debian) version.
+#### Future platform to test
+* Archlinux
+* Gentoo
+* Slackware
+
 
 #### Features
-* rock solid defaults
-* easy extendable
-* one-line opening ports
-* one line whitelisting ips
-* one line blacklisting ips
-* extensively documented (inline comments)
+* Rock solid defaults
+* Easy extendable
+* One-line opening ports
+* One line whitelisting ips
+* One line blacklisting ips
+* Documented (inline comments)
 
 ## Installation
 
-create necessary directories first
+Create necessary directories first
     
     sudo mkdir /etc/firewall
     sudo mkdir /etc/firewall/custom
 
-checkout the github repo and install the files
+Checkout the github repo and install the files
 
-    git clone git://github.com/bmaeser/iptables-boilerplate.git
-    cd iptables-boilerplate
+    git clone https://github.com/HanXHX/iptables-hanxhx.git 
+    cd iptables-hanxhx
     sudo cp firewall /etc/init.d/firewall
     cd etc/firewall/
     sudo cp *.conf /etc/firewall/
     
-make sure firewall is executable and update runnlevels
+Make sure firewall is executable and update runnlevels
 
     sudo chmod 755 /etc/init.d/firewall
     sudo update-rc.d firewall defaults
@@ -130,17 +134,17 @@ However, you can manually start/stop/restart, e.g. to update changed settings.
 * stop: stops the firewall
 * restart, reload, force-reload: restarts the firewall (all three the same)
 * status: print out the status of the firewall, shows all entries in iptables
-* version: print out the version of iptables-boilerplate
 
-## How to contribute
-fork + hack + pull request please :-)
-
-thx
+## About Authors
+This program is written by Emilien Mantel (http://www.debianiste.org).
+This program is forked from iptables-boilerplate (https://github.com/bmaeser/iptables-boilerplate)
+written by Bernhard Mäser (http://bmaeser.io).
 
 
 ## Licence
 The MIT License (MIT)
-Copyright © Bernhard Mäser, http://bmaeser.io
+Copyright © 2013 Emilien Mantel, http://www.debianiste.org
+Copyright © 2012-2013 Bernhard Mäser, http://bmaeser.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the “Software”), to deal
@@ -159,8 +163,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/bmaeser/iptables-boilerplate/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
