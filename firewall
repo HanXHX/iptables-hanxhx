@@ -296,11 +296,11 @@ case "$1" in
 		$IPTABLES -A INPUT -j LOG
 		$IPTABLES -A INPUT -j REJECT
 		
-		echo "firewall started"
+		echo "Firewall started"
 		;;
 
 	stop)
-		echo "stopping firewall..."
+		echo "Stopping firewall..."
 		
 		## delete old rules
 		$IPTABLES -F
@@ -316,7 +316,7 @@ case "$1" in
 		$IP6TABLES -P OUTPUT ACCEPT
 		$IP6TABLES -P FORWARD ACCEPT
 		
-		echo "firewall stopped"
+		echo "Firewall stopped"
 		;;
 
 	status)
@@ -334,20 +334,15 @@ case "$1" in
 		$IPTABLES -t mangle -L -vn
 		;;
 
-	version)
-		echo "Version: 1.1.1"
-		;;
-		
 	restart|reload|force-reload)
 		$0 stop
 		sleep 1
 		$0 start
 		;;
 
-	  *)
-		echo "Your are doing it wrong."
-		echo "Syntax: $0 {start|stop|restart|reload|force-reload|status|version}"
+	*)
+		echo "Syntax: $0 {start|stop|restart|reload|force-reload|status}"
 		exit 1
 		;;
 
-	esac
+esac
