@@ -9,14 +9,10 @@
 # Short-Description: start/stop iptables-firewall
 ### END INIT INFO
 
+# Author: Emilien Mantel <emilien.mantel@debianiste.org>
 # Author: Bernhard Mäser <bernhard.maeser@scale-it.at>
 
 #################################################################
-
-## PLACE THIS FILE at /etc/init.d/firewall
-## MAKE SURE ITS EXECUTABLE (chmod 755 /etc/init.d/firewall)
-## UPDATE YOUR RC (update-rc.d firewall defaults)
-
 
 #################################################################
 ## BEWARE:
@@ -270,11 +266,9 @@ case "$1" in
         # IPv6 
         #################################################################
 
-        if $ipv6_loopback_ok ; then
-            ## allow on loopback
-            $IP6TABLES -A INPUT -i lo -j ACCEPT
-            $IP6TABLES -A OUTPUT -o lo -j ACCEPT
-        fi
+        ## allow on loopback
+        $IP6TABLES -A INPUT -i lo -j ACCEPT
+        $IP6TABLES -A OUTPUT -o lo -j ACCEPT
 
         if $ipv6_drop_all ; then
             ## drop all ip IPv6 traffic
