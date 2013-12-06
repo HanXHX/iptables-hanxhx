@@ -1,70 +1,118 @@
 #!/bin/bash
 
 ### BEGIN INIT INFO
-# Provides:		  firewall
-# Required-Start:	$local_fs $remote_fs $network
-# Required-Stop:	 $local_fs $remote_fs $network
-# Default-Start:	 S
-# Default-Stop:	  0 6
+# Provides:          firewall
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     S
+# Default-Stop:      0 6
 # Short-Description: start/stop iptables-firewall
 ### END INIT INFO
 
 # Author: Emilien Mantel <emilien.mantel@debianiste.org>
 #################################################################
 
-FIREWALL_CONF=/etc/firewall/firewall.conf
-FIREWALL_INCLUDES=/etc/firewall/includes
+DEBUG=1
+
+if [ $DEBUG -eq 0 ]
+then
+	FIREWALL_DIR=/etc/firewall
+	IPTABLES=/sbin/iptables
+	IP6TABLES=/sbin/ip6tables
+	[ $UID -ne 0 ] && echo "You must be root!" && exit 1
+else
+	FIREWALL_DIR=etc/firewall
+	IPTABLES="echo iptables"
+	IP6TABLES="echo ip6tables"
+fi
+VERSION='1.0-dev'
+FIREWALL_CONF=$FIREWALL_DIR/firewall.conf
 
 
 #################################################################
 # Configuration
 #################################################################
-if [ -f $FIREWALL_CONF ] ; then
+if [ -f $FIREWALL_CONF ]
+then
 	source $FIREWALL_CONF
+
+	# force $ipv6_disabled if allready disabled
+	grep -q 1 /proc/sys/net/ipv6/conf/*/disable_ipv6 && ipv6_disabled=true
 else 
 	echo "No configuration-file found ($FIREWALL_CONF)"
 	exit 1
 fi
 
-if [ -f $FIREWALL_INCLUDES ] ; then
-	source $FIREWALL_INCLUDES
-else
-	echo "Minimal include missing ($FIREWALL_INCLUDES)"
-	exit 1
-fi
+#################################################################
+# Functions
+#################################################################
+function parse_ip_conf
+{
+	# $1 = config file
+	[[ $1 =~ whitelist ]] && state=ACCEPT || state=DROP
+	[[ $1 =~ ipv6 ]] && ipt=$IP6TABLES || ipt=$IPTABLES
+	echo "PARSING $1"
 
+	[[ $ipv6_disabled ]] && [[ $ipt = $IP6TABLES ]] && return
+
+	for IP in `sed 's/\s/_/g' $1 | grep -v "^#"`
+	do
+		$ipt -A INPUT -s $IP -m state --state NEW -j $state
+	done
+}
+
+function ip46tables
+{
+	$IPTABLES $*
+	! $ipv6_disabled && $IP6TABLES $*
+}
+
+
+#################################################################
+# Dispatch 
+#################################################################
 
 case "$1" in
 	start)
 
-		echo "starting firewall..."
+		if  ! $firewall_enable
+		then
+			echo "Firewall is not enabled. Please check \$firewall_enable in $FIREWALL_CONF"
+			exit 1
+		fi
 
+		echo "Starting firewall..."
+
+		#################################################################
 		## DELETE OLD RULES
-		$IPTABLES -F
-		$IPTABLES -X
+		#################################################################
+
+		ip46tables -F
+		ip46tables -X
 
 		#################################################################
 		# DEFAULT POLICIES
 		#################################################################
 
-		$IPTABLES -P INPUT DROP
-		$IPTABLES -P OUTPUT ACCEPT
+		ip46tables -P INPUT DROP
+		ip46tables -P OUTPUT ACCEPT
 
 		#################################################################
 		# IPv4 FORWARDING 
 		#################################################################
 
-		if $ipv4_forwarding ; then
+		if $ipv4_forwarding 
+		then
 			$IPTABLES -P FORWARD ACCEPT
 			## enable IPv4 forwarding ( ! overwrites sysctl settings ! )
-			echo 1 > /proc/sys/net/ipv4/ip_forward
+#			echo 1 > /proc/sys/net/ipv4/ip_forward
 		else
 			## drop IPv4 forwarding
 			$IPTABLES -P FORWARD DROP
 			## disable IPv4 forwarding ( ! overwrites sysctl settings ! )
-			echo 0 > /proc/sys/net/ipv4/ip_forward
-			echo 0 > /proc/sys/net/ipv4/conf/all/forwarding
-			echo 0 > /proc/sys/net/ipv4/conf/default/forwarding
+#			echo 0 > /proc/sys/net/ipv4/ip_forward
+#			echo 0 > /proc/sys/net/ipv4/conf/all/forwarding
+#			echo 0 > /proc/sys/net/ipv4/conf/default/forwarding
 		fi
 
 		#################################################################
@@ -72,39 +120,38 @@ case "$1" in
 		#################################################################
 
 		## allow anything on loopback
-		$IPTABLES -A INPUT -i lo -j ACCEPT
-		$IPTABLES -A OUTPUT -o lo -j ACCEPT
+		ip46tables -A INPUT -i lo -j ACCEPT
+		ip46tables -A OUTPUT -o lo -j ACCEPT
 
 		## allow ICMP
 		$IPTABLES -A INPUT -p icmp -j ACCEPT
+		[ ! $ipv6_disabled ] && $IP6TABLES -A INPUT -p icmpv6 -j ACCEPT
 
 		## allow all packets that already have a connection
-		$IPTABLES -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-		$IPTABLES -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+		ip46tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+		ip46tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 		##################################################################
 		# EXTERNAL CONFIGS
 		##################################################################
 
-		## ACCEPT ALL CONNECTIONS FROM WHITELIST FILE /etc/firewall/ip-whitelist.conf
-		for IP in `cat /etc/firewall/ip-whitelist.conf | sed 's/\s/_/g' | grep -v "^#"`; do
-			$IPTABLES -A INPUT -s $IP -m state --state NEW -j ACCEPT
-		done;
+		## ACCEPT ALL CONNECTIONS FROM WHITELIST FILE
+		parse_ip_conf "$FIREWALL_DIR/ip-whitelist.conf"
+		parse_ip_conf "$FIREWALL_DIR/ipv6-whitelist.conf"
 
-		## DROP ALL CONNECTIONS FROM BLACKLIST FILE /etc/firewall/ip-blacklist.conf
-		for IP in `cat /etc/firewall/ip-blacklist.conf | sed 's/\s/_/g' | grep -v "^#"`; do
-			$IPTABLES -A INPUT -s $IP -m state --state NEW -j DROP
-		done;
+		## DROP ALL CONNECTIONS FROM BLACKLIST FILES 
+		parse_ip_conf "$FIREWALL_DIR/ip-blacklist.conf"
+		parse_ip_conf "$FIREWALL_DIR/ipv6-blacklist.conf"
 
-		# EXECUTE ALL CUSTOM SCRIPTS IN /etc/firewall/custom
-		if [ "$(ls -A /etc/firewall/custom)" ]; then
-			for F in /etc/firewall/custom/*; do
+		# EXECUTE ALL CUSTOM SCRIPTS IN $FIREWALL_DIR/custom
+		if [ "$(ls -A $FIREWALL_DIR/custom)" ]; then
+			for F in $FIREWALL_DIR/custom/*; do
 				. $F
 			done;
 		fi
 
-		# ALLOWED PORTS/PROTOCOLS FROM /etc/firewall/services.conf
-		cat /etc/firewall/services.conf | grep -v "^#" | while read line; do
+		# ALLOWED PORTS/PROTOCOLS FROM $FIREWALL_DIR/services.conf
+		cat $FIREWALL_DIR/services.conf | grep -v "^#" $FIREWALL_DIR/services.conf | while read line; do
 			[ -z "$line" ] && continue
 	
 			# INITIALIZE
@@ -117,7 +164,7 @@ case "$1" in
 				if [ ${#SERVICES[@]} == 2 ]; then
 					IP=${SERVICES[1]}
 				fi;
-				$IPTABLES -A INPUT -p $PROTO -s $IP --dport $PORT -m state --state NEW -j ACCEPT
+				ip46tables -A INPUT -p $PROTO -s $IP --dport $PORT -m state --state NEW -j ACCEPT
 				done <<< "$line"
 		done;
 
@@ -126,12 +173,12 @@ case "$1" in
 		#################################################################
 
 		if $drop_invalid ; then
-			$IPTABLES -N invalid_drop
-			$IPTABLES -A invalid_drop -m state --state INVALID -m limit --limit 60/m -j LOG --log-prefix "INVALID PACKAGE"
-			$IPTABLES -A invalid_drop -m state --state INVALID -j DROP
+			ip46tables -N invalid_drop
+			ip46tables -A invalid_drop -m state --state INVALID -m limit --limit 60/m -j LOG --log-prefix "INVALID PACKAGE"
+			ip46tables -A invalid_drop -m state --state INVALID -j DROP
 
-			$IPTABLES -A INPUT -m state --state INVALID -j invalid_drop
-			$IPTABLES -A OUTPUT -m state --state INVALID -j invalid_drop
+			ip46tables -A INPUT -m state --state INVALID -j invalid_drop
+			ip46tables -A OUTPUT -m state --state INVALID -j invalid_drop
 		fi
 
 		##################################################################
@@ -139,8 +186,8 @@ case "$1" in
 		##################################################################
 
 		if $drop_broadcast ; then
-			$IPTABLES -A INPUT -m pkttype --pkt-type broadcast -j DROP
-			$IPTABLES -A INPUT -m pkttype --pkt-type multicast -j DROP
+			ip46tables -A INPUT -m pkttype --pkt-type broadcast -j DROP
+			ip46tables -A INPUT -m pkttype --pkt-type multicast -j DROP
 		fi
 
 		##################################################################
@@ -149,30 +196,30 @@ case "$1" in
 
 		if $drop_portscan ; then
 
-			$IPTABLES -N portscan_drop
-			$IPTABLES -A portscan_drop -m limit --limit 60/m -j LOG --log-prefix "PORTSCAN DETECTED"
-			$IPTABLES -A portscan_drop -j DROP
+			ip46tables -N portscan_drop
+			ip46tables -A portscan_drop -m limit --limit 60/m -j LOG --log-prefix "PORTSCAN DETECTED"
+			ip46tables -A portscan_drop -j DROP
 
 			## nmap Null scans / no flags
-			$IPTABLES -A INPUT -p tcp --tcp-flags ALL NONE -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ALL NONE -j portscan_drop
 			## nmap FIN stealth scan
-			$IPTABLES -A INPUT -p tcp --tcp-flags ALL FIN -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ALL FIN -j portscan_drop
 			## SYN + FIN
-			$IPTABLES -A INPUT -p tcp --tcp-flags SYN,FIN SYN,FIN -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags SYN,FIN SYN,FIN -j portscan_drop
 			## SYN + RST
-			$IPTABLES -A INPUT -p tcp --tcp-flags SYN,RST SYN,RST -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags SYN,RST SYN,RST -j portscan_drop
 			## FIN + RST
-			$IPTABLES -A INPUT -p tcp --tcp-flags FIN,RST FIN,RST -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags FIN,RST FIN,RST -j portscan_drop
 			## FIN + URG + PSH
-			$IPTABLES -A INPUT -p tcp --tcp-flags ALL FIN,URG,PSH -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ALL FIN,URG,PSH -j portscan_drop
 			## XMAS
-			$IPTABLES -A INPUT -p tcp --tcp-flags ALL URG,ACK,PSH,RST,SYN,FIN -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ALL URG,ACK,PSH,RST,SYN,FIN -j portscan_drop
 			## ALL
-			$IPTABLES -A INPUT -p tcp --tcp-flags ALL ALL -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ALL ALL -j portscan_drop
 			## FIN/PSH/URG without ACK
-			$IPTABLES -A INPUT -p tcp --tcp-flags ACK,FIN FIN -j portscan_drop
-			$IPTABLES -A INPUT -p tcp --tcp-flags ACK,PSH PSH -j portscan_drop
-			$IPTABLES -A INPUT -p tcp --tcp-flags ACK,URG URG -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ACK,FIN FIN -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ACK,PSH PSH -j portscan_drop
+			ip46tables -A INPUT -p tcp --tcp-flags ACK,URG URG -j portscan_drop
 		fi
 
 		##################################################################
@@ -262,31 +309,28 @@ case "$1" in
 		# IPv6 
 		#################################################################
 
-		## allow on loopback
-		$IP6TABLES -A INPUT -i lo -j ACCEPT
-		$IP6TABLES -A OUTPUT -o lo -j ACCEPT
-
-		if $ipv6_drop_all ; then
-			## drop all ip IPv6 traffic
-			$IP6TABLES -P INPUT DROP
-			$IP6TABLES -P OUTPUT DROP
-		fi
-
-		if $ipv6_forwarding ; then
-			$IP6TABLES -P FORWARD ACCEPT
-		else
-			## drop IPv6 forwarding
-			$IP6TABLES -P FORWARD DROP
-			## disable IPv6 forwarding ( ! overwrites sysctl settings ! )
-			echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
-			echo 0 > /proc/sys/net/ipv6/conf/default/forwarding
-		fi
-
-		if $ipv6_disabled ; then
+		if $ipv6_disabled
+		then
 			## disable IPv6 ( ! overwrites sysctl settings ! )
+			echo "I disable IPv6" 
 			echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 			echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6
+		else
+			# ---- All IPv6 config must be in this block ----
+			if $ipv6_forwarding
+			then
+				$IP6TABLES -P FORWARD ACCEPT
+				echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+				echo 1 > /proc/sys/net/ipv6/conf/default/forwarding
+			else
+				## drop IPv6 forwarding
+				$IP6TABLES -P FORWARD DROP
+				## disable IPv6 forwarding ( ! overwrites sysctl settings ! )
+				echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
+				echo 0 > /proc/sys/net/ipv6/conf/default/forwarding
+			fi
 		fi
+
 
 		##################################################################
 		# FINAL RULES
@@ -346,3 +390,7 @@ case "$1" in
 		;;
 
 esac
+
+
+
+
