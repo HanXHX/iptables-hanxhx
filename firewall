@@ -105,14 +105,14 @@ case "$1" in
 		then
 			$IPTABLES -P FORWARD ACCEPT
 			## enable IPv4 forwarding ( ! overwrites sysctl settings ! )
-#			echo 1 > /proc/sys/net/ipv4/ip_forward
+			echo 1 > /proc/sys/net/ipv4/ip_forward
 		else
 			## drop IPv4 forwarding
 			$IPTABLES -P FORWARD DROP
 			## disable IPv4 forwarding ( ! overwrites sysctl settings ! )
-#			echo 0 > /proc/sys/net/ipv4/ip_forward
-#			echo 0 > /proc/sys/net/ipv4/conf/all/forwarding
-#			echo 0 > /proc/sys/net/ipv4/conf/default/forwarding
+			echo 0 > /proc/sys/net/ipv4/ip_forward
+			echo 0 > /proc/sys/net/ipv4/conf/all/forwarding
+			echo 0 > /proc/sys/net/ipv4/conf/default/forwarding
 		fi
 
 		#################################################################
