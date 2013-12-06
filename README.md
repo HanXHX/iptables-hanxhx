@@ -143,8 +143,8 @@ written by Bernhard Mäser (http://bmaeser.io).
 
 ## Licence
 The MIT License (MIT)
-Copyright © 2013 Emilien Mantel, http://www.debianiste.org
-Copyright © 2012-2013 Bernhard Mäser, http://bmaeser.io
+* Copyright © 2013 Emilien Mantel, http://www.debianiste.org
+* Copyright © 2012-2013 Bernhard Mäser, http://bmaeser.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the “Software”), to deal
