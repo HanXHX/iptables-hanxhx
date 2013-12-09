@@ -12,27 +12,15 @@
 # Author: Emilien Mantel <emilien.mantel@debianiste.org>
 #################################################################
 
-DEBUG=1
-
-if [ $DEBUG -eq 0 ]
-then
-	FIREWALL_DIR=/etc/firewall
-	DATA_DIR=/var/local/firewall
-	IPTABLES=/sbin/iptables
-	IP6TABLES=/sbin/ip6tables
-	SYSCTL=/sbin/sysctl
-	[ $UID -ne 0 ] && echo "You must be root!" && exit 1
-else
-	FIREWALL_DIR=etc/firewall
-	DATA_DIR=var/local/firewall
-	IPTABLES="echo iptables"
-	IP6TABLES="echo ip6tables"
-	SYSCTL="echo sysctl"
-fi
+FIREWALL_DIR=/etc/firewall
+DATA_DIR=/var/local/firewall
+IPTABLES=/sbin/iptables
+IP6TABLES=/sbin/ip6tables
+SYSCTL=/sbin/sysctl
 VERSION='1.0-dev'
 FIREWALL_CONF=$FIREWALL_DIR/firewall.conf
 KERNEL_OPTION=$DATA_DIR/last_kernel_option
-
+[ $UID -ne 0 ] && echo "You must be root!" && exit 1
 
 #################################################################
 # Configuration
@@ -125,14 +113,14 @@ case "$1" in
 		then
 			$IPTABLES -P FORWARD ACCEPT
 			## enable IPv4 forwarding ( ! overwrites sysctl settings ! )
-			set_kernel_option 1, 'net.ipv4.ip_forward'
+			set_kernel_option 1 'net.ipv4.ip_forward'
 		else
 			## drop IPv4 forwarding
 			$IPTABLES -P FORWARD DROP
 			## disable IPv4 forwarding ( ! overwrites sysctl settings ! )
-			set_kernel_option 0, 'net.ipv4.ip_forward'
-			set_kernel_option 0, 'net.ipv4.conf.all.forwarding'
-			set_kernel_option 0, 'net.ipv4.conf.default.forwarding'
+			set_kernel_option 0 'net.ipv4.ip_forward'
+			set_kernel_option 0 'net.ipv4.conf.all.forwarding'
+			set_kernel_option 0 'net.ipv4.conf.default.forwarding'
 		fi
 
 		#################################################################
@@ -194,7 +182,7 @@ case "$1" in
 
 		if $drop_invalid ; then
 			ip46tables -N invalid_drop
-			ip46tables -A invalid_drop -m state --state INVALID -m limit --limit 60/m -j LOG --log-prefix "INVALID PACKAGE"
+			ip46tables -A invalid_drop -m state --state INVALID -m limit --limit 60/m -j LOG --log-prefix "INVALID_PACKAGE"
 			ip46tables -A invalid_drop -m state --state INVALID -j DROP
 
 			ip46tables -A INPUT -m state --state INVALID -j invalid_drop
@@ -217,7 +205,7 @@ case "$1" in
 		if $drop_portscan ; then
 
 			ip46tables -N portscan_drop
-			ip46tables -A portscan_drop -m limit --limit 60/m -j LOG --log-prefix "PORTSCAN DETECTED"
+			ip46tables -A portscan_drop -m limit --limit 60/m -j LOG --log-prefix "PORTSCAN_DETECTED"
 			ip46tables -A portscan_drop -j DROP
 
 			## nmap Null scans / no flags
@@ -351,15 +339,6 @@ case "$1" in
 			fi
 		fi
 
-
-		##################################################################
-		# FINAL RULES
-		##################################################################
-
-		## log all other packages and reject them
-		$IPTABLES -A INPUT -j LOG
-		$IPTABLES -A INPUT -j REJECT
-		
 		echo "Firewall started"
 		;;
 
