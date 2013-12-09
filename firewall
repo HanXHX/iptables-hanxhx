@@ -17,16 +17,19 @@ DEBUG=1
 if [ $DEBUG -eq 0 ]
 then
 	FIREWALL_DIR=/etc/firewall
+	DATA_DIR=/var/local/firewall
 	IPTABLES=/sbin/iptables
 	IP6TABLES=/sbin/ip6tables
 	[ $UID -ne 0 ] && echo "You must be root!" && exit 1
 else
 	FIREWALL_DIR=etc/firewall
+	DATA_DIR=var/local/firewall
 	IPTABLES="echo iptables"
 	IP6TABLES="echo ip6tables"
 fi
 VERSION='1.0-dev'
 FIREWALL_CONF=$FIREWALL_DIR/firewall.conf
+KERNEL_OPTION=$DATA_DIR/last_kernel_option
 
 
 #################################################################
@@ -67,6 +70,20 @@ function ip46tables
 	! $ipv6_disabled && $IP6TABLES $*
 }
 
+function set_kernel_option
+{
+	## $1 = option | $2 = file
+	# We save last config
+	echo "$2=$(cat $2)" >> $KERNEL_OPTION 
+	# Apply new config
+	echo $1 > $2
+}
+
+function restore_kernel_option
+{
+	echo 1
+}
+
 
 #################################################################
 # Dispatch 
@@ -105,14 +122,14 @@ case "$1" in
 		then
 			$IPTABLES -P FORWARD ACCEPT
 			## enable IPv4 forwarding ( ! overwrites sysctl settings ! )
-			echo 1 > /proc/sys/net/ipv4/ip_forward
+			set_kernel_option 1, '/proc/sys/net/ipv4/ip_forward'
 		else
 			## drop IPv4 forwarding
 			$IPTABLES -P FORWARD DROP
 			## disable IPv4 forwarding ( ! overwrites sysctl settings ! )
-			echo 0 > /proc/sys/net/ipv4/ip_forward
-			echo 0 > /proc/sys/net/ipv4/conf/all/forwarding
-			echo 0 > /proc/sys/net/ipv4/conf/default/forwarding
+			set_kernel_option 0, '/proc/sys/net/ipv4/ip_forward'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/forwarding'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/forwarding'
 		fi
 
 		#################################################################
@@ -228,81 +245,81 @@ case "$1" in
 
 		if $secure_redirects ; then
 			## allow only ICMP redirects from our own gateway
-			echo 1 > /proc/sys/net/ipv4/conf/all/secure_redirects
-			echo 1 > /proc/sys/net/ipv4/conf/default/secure_redirects
+			set_kernel_option 1, '/proc/sys/net/ipv4/conf/all/secure_redirects'
+			set_kernel_option 1, '/proc/sys/net/ipv4/conf/default/secure_redirects'
 		fi
 
 		if $block_redirects ; then
 			## dont accept ICMP redirects
-			echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
-			echo 0 > /proc/sys/net/ipv4/conf/default/accept_redirects
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/accept_redirects'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/accept_redirects'
 			## dont sent ICMP redirects
-			echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects
-			echo 0 > /proc/sys/net/ipv4/conf/default/send_redirects
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/send_redirects'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/send_redirects'
 		fi
 
 		if $ignore_broadcast_icmp ; then
 			## ignore broadcast/multicast ICMP // smurf-attack prevention
-			echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+			set_kernel_option 1, '/proc/sys/net/ipv4/icmp_echo_ignore_broadcasts'
 		fi
 
 		if $ignore_bogus_errors ; then
 			## ignore bogus error responses
-			echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+			set_kernel_option 1, '/proc/sys/net/ipv4/icmp_ignore_bogus_error_responses'
 		fi
 
 		## dont ignore pings
-		echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_all
+		set_kernel_option 0, '/proc/sys/net/ipv4/icmp_echo_ignore_all'
 
 		if $block_source_route_packages ; then
 			## allow no source route packages
-			echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
-			echo 0 > /proc/sys/net/ipv4/conf/default/accept_source_route
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/accept_source_route'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/accept_source_route'
 		fi
 
 		if $block_proxy_arp ; then
 			## we dont want to proxy arp
-			echo 0 > /proc/sys/net/ipv4/conf/all/proxy_arp
-			echo 0 > /proc/sys/net/ipv4/conf/default/proxy_arp
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/proxy_arp'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/proxy_arp'
 		fi
 
 		if $enable_syn_cookies ; then
 			## enable syn-cookies // syn-flood prevention
-			echo 1 > /proc/sys/net/ipv4/tcp_syncookies
-			echo 2048 > /proc/sys/net/ipv4/tcp_max_syn_backlog
-			echo 5 > /proc/sys/net/ipv4/tcp_syn_retries
-			echo 5 > /proc/sys/net/ipv4/tcp_synack_retries
+			set_kernel_option 1, '/proc/sys/net/ipv4/tcp_syncookies'
+			set_kernel_option 2048, '/proc/sys/net/ipv4/tcp_max_syn_backlog'
+			set_kernel_option 5, '/proc/sys/net/ipv4/tcp_syn_retries'
+			set_kernel_option 5, '/proc/sys/net/ipv4/tcp_synack_retries'
 		fi
 
 		if $enable_reverse_path ; then
 			## enable reverse path filter // RFC1812 // spoofing attack prevention
-			echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter
-			echo 1 > /proc/sys/net/ipv4/conf/default/rp_filter
+			set_kernel_option 1, '/proc/sys/net/ipv4/conf/all/rp_filter'
+			set_kernel_option 1, '/proc/sys/net/ipv4/conf/default/rp_filter'
 		fi
 
 		if $disable_bootp_relay ; then
 			## no relaying of bootp
-			echo 0 > /proc/sys/net/ipv4/conf/all/bootp_relay
-			echo 0 > /proc/sys/net/ipv4/conf/default/bootp_relay
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/bootp_relay'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/bootp_relay'
 		fi
 
 		if $disable_martian_loging ; then
 			## do not log martian packets
-			echo 0 > /proc/sys/net/ipv4/conf/all/log_martians
-			echo 0 > /proc/sys/net/ipv4/conf/default/log_martians
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/log_martians'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/log_martians'
 		fi
 
 		if $disable_srr ; then
 			## dont allow SRR
-			echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
-			echo 0 > /proc/sys/net/ipv4/conf/default/accept_source_route
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/all/accept_source_route'
+			set_kernel_option 0, '/proc/sys/net/ipv4/conf/default/accept_source_route'
 		fi
 
 		if $enable_sack ; then
 			## enable enable_sack
-			echo 1 > /proc/sys/net/ipv4/tcp_sack
-			echo 1 > /proc/sys/net/ipv4/tcp_dsack
-			echo 1 > /proc/sys/net/ipv4/tcp_fack
+			set_kernel_option 1, '/proc/sys/net/ipv4/tcp_sack'
+			set_kernel_option 1, '/proc/sys/net/ipv4/tcp_dsack'
+			set_kernel_option 1, '/proc/sys/net/ipv4/tcp_fack'
 		fi
 
 		#################################################################
@@ -313,21 +330,21 @@ case "$1" in
 		then
 			## disable IPv6 ( ! overwrites sysctl settings ! )
 			echo "I disable IPv6" 
-			echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
-			echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6
+			set_kernel_option 1, '/proc/sys/net/ipv6/conf/all/disable_ipv6'
+			set_kernel_option 1, '/proc/sys/net/ipv6/conf/default/disable_ipv6'
 		else
 			# ---- All IPv6 config must be in this block ----
 			if $ipv6_forwarding
 			then
 				$IP6TABLES -P FORWARD ACCEPT
-				echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
-				echo 1 > /proc/sys/net/ipv6/conf/default/forwarding
+				set_kernel_option 1, '/proc/sys/net/ipv6/conf/all/forwarding'
+				set_kernel_option 1, '/proc/sys/net/ipv6/conf/default/forwarding'
 			else
 				## drop IPv6 forwarding
 				$IP6TABLES -P FORWARD DROP
 				## disable IPv6 forwarding ( ! overwrites sysctl settings ! )
-				echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
-				echo 0 > /proc/sys/net/ipv6/conf/default/forwarding
+				set_kernel_option 0, '/proc/sys/net/ipv6/conf/all/forwarding'
+				set_kernel_option 0, '/proc/sys/net/ipv6/conf/default/forwarding'
 			fi
 		fi
 
