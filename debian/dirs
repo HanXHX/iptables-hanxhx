@@ -4,3 +4,4 @@ var/local/firewall
 etc
 etc/firewall
 etc/firewall/custom
+etc/init.d

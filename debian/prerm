@@ -19,6 +19,11 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
+        /etc/init.d/firewall stop
+    ;;
+
+    upgrade)
+        
     ;;
 
     failed-upgrade)
