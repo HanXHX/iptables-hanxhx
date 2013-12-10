@@ -1,0 +1,6 @@
+var
+var/local
+var/local/firewall
+etc
+etc/firewall
+etc/firewall/custom

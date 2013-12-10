@@ -4,8 +4,8 @@ Priority: extra
 Maintainer: Emilien Mantel <emilien.mantel@debianiste.org>
 Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.3
-Homepage: https://github.com/HanXHX/iptables-hanxhx 
-Vcs-Git: https://github.com/HanXHX/iptables-hanxhx.git 
+Homepage: https://github.com/HanXHX/iptables-hanxhx
+Vcs-Git: https://github.com/HanXHX/iptables-hanxhx.git
 
 Package: iptables-hanxhx
 Architecture: all
