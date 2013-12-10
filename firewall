@@ -12,6 +12,8 @@
 # Author: Emilien Mantel <emilien.mantel@debianiste.org>
 #################################################################
 
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
 FIREWALL_DIR=/etc/firewall
 DATA_DIR=/var/local/firewall
 IPTABLES=/sbin/iptables
