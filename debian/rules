@@ -21,11 +21,11 @@ binary: install
 	dh binary
 
 install: build
-	dh install
-	dh_testdir
 	dh_testroot
+	dh_testdir
 	dh_installdirs
-	mkdir -p $(CURDIR)/debian/iptables-hanxhx
-	cp -r $(CURDIR)/etc $(CURDIR)/debian/iptables-hanxhx
-	cp -r $(CURDIR)/var $(CURDIR)/debian/iptables-hanxhx
-	cp $(CURDIR)/firewall $(CURDIR)/debian/iptables-hanxhx/etc/init.d/firewall
+	dh install --sourcedir=$(CURDIR)
+#	mkdir -p $(CURDIR)/debian/iptables-hanxhx
+#	cp -r $(CURDIR)/etc $(CURDIR)/debian/iptables-hanxhx
+#	cp -r $(CURDIR)/var $(CURDIR)/debian/iptables-hanxhx
+#	cp $(CURDIR)/firewall $(CURDIR)/debian/iptables-hanxhx/etc/init.d/firewall
