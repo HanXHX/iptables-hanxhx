@@ -71,13 +71,6 @@ function set_kernel_option
 	$SYSCTL -w "$2=$1"
 }
 
-function restore_kernel_option
-{
-	$SYSCTL -p $KERNEL_OPTION
-	> $KERNEL_OPTION
-}
-
-
 #################################################################
 # Dispatch 
 #################################################################
@@ -347,8 +340,6 @@ case "$1" in
 	stop)
 		echo "Stopping firewall..."
 		
-		restore_kernel_option
-
 		## delete old rules
 		$IPTABLES -F
 		$IPTABLES -X
@@ -363,6 +354,10 @@ case "$1" in
 		$IP6TABLES -P OUTPUT ACCEPT
 		$IP6TABLES -P FORWARD ACCEPT
 		
+		## Clean kernel parameters
+		$SYSCTL -p $KERNEL_OPTION
+		rm $KERNEL_OPTION
+
 		echo "Firewall stopped"
 		;;
 
