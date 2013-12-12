@@ -19,7 +19,7 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-        /etc/init.d/firewall stop
+		invoke-rc.d firewall stop
     ;;
 
     upgrade)
