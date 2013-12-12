@@ -5,4 +5,3 @@ etc/firewall/ip-whitelist.conf etc/firewall
 etc/firewall/firewall.conf etc/firewall
 etc/firewall/ipv6-whitelist.conf etc/firewall
 etc/firewall/ipv6-blacklist.conf etc/firewall
-var/local/firewall/last_kernel_option var/local/firewall

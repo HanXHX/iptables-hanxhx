@@ -1,7 +1,3 @@
-var
-var/local
-var/local/firewall
-etc
+var/cache/firewall
 etc/firewall
 etc/firewall/custom
-etc/init.d

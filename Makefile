@@ -19,5 +19,5 @@ debian-package:
 #	@cp -a etc $(dest_data)/
 #	@cp -a var $(dest_data)/
 #	@cp firewall $(dest_data)/etc/init.d/
-	find . -type d | grep -vF '.git' | sed -r "s#^\./?##g;" | egrep '^(var|etc)' > debian/dirs
+#	find . -type d | grep -vF '.git' | sed -r "s#^\./?##g;" | egrep '^(var|etc)' > debian/dirs
 	@git-buildpackage --git-ignore-new --git-export-dir=$(export_dir) --git-upstream-tree=master --git-dist=unstable --git-builder=$(git_builder)
