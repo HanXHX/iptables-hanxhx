@@ -29,7 +29,7 @@ iptables-hanxhx is a set of predefined firewall rules. Now, you can use this scr
 * One line blacklisting ips
 * Documented (inline comments)
 
-## Installation
+## Installation (non Debian distros)
 
 Create necessary directories first
     
@@ -48,6 +48,17 @@ Make sure firewall is executable and update runnlevels
 
     sudo chmod 755 /etc/init.d/firewall
     sudo update-rc.d firewall defaults
+
+## Installation (Debian based distros)
+
+Create debian package
+
+    make clean
+    make deb
+
+Install debian package
+
+   dpkg -i builds/iptables-hanxhx*.deb
     
 ## Configuration
 

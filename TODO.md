@@ -6,7 +6,6 @@ Global
 ------
 * Don't allow "start firewall" if it's started
 * Output Rules (don't allow all output)
-* Debian packaging
 * Create manpage/doc
 * Provide skeleton for custom scripts
 * Syntax check of custom scripts before start
