@@ -1,5 +1,17 @@
-iptables-hanxhx (1.0-1) UNRELEASED; urgency=low
+iptables-hanxhx (1.0-1~1.gbp1fe81c) UNRELEASED; urgency=low
 
-  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+  ** SNAPSHOT build @1fe81c2c77ca9693ce677c3d51b78308b8eb72dd **
+
+  [ Emilien Mantel ]
+  * Adding a folder in git
+  * Better debianization (prerm and better packaging)
+  * Ignore few files
+  * Debianization with install file
+  * last_kernel_option must be empty!
+  * Revert "Ignore few files"
+  * Clean code /var/*/firewall
+  * Fix few warnings/errors in lintian (debian scripts)
+  * Fix bug init info (reported by lintian)
+  * Kernel option file is created/deleted by firewall
 
  -- Emilien Mantel <emilien.mantel@debianiste.org>  Tue, 10 Dec 2013 10:32:02 +0100
